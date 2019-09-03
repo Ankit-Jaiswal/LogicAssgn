@@ -1,6 +1,13 @@
 module FOL
 import Data.Vect
 
+infixr 10 .=
+infixr 10 ~>
+infixr 10 \/
+infixr 10 /\
+infixr 10 .=>
+infixr 10 .~
+
 data Function: Type where
   F: String -> Nat -> Function
 
@@ -28,12 +35,8 @@ data Term: Type where
 data Variable: Term -> Type where
   Free: (s:String) -> Variable (Vari s)
 
-infixr 10 .=
-infixr 10 ~>
-infixr 10 \/
-infixr 10 /\
-infixr 10 .=>
-infixr 10 .~
+toTerm: {T: Term} -> (Variable T) -> Term
+toTerm (Free s) = Vari s
 
 data Formula: Type where
   (.=): Term -> Term -> Formula
@@ -46,10 +49,26 @@ data Formula: Type where
   ForAll: {s: String} -> (Variable (Vari s)) -> Formula -> Formula
   Exists: {s: String} -> (Variable (Vari s)) -> Formula -> Formula
 
-toTerm: {T: Term} -> (Variable T) -> Term
-toTerm (Free s) = Vari s
+Show Term where
+  show (Cons s) = s
+  show (Vari s) = s
+  show (f @. xs) = (getName f) ++ (show xs)
 
-
+Show Formula where
+  show (a1 .= a2) = (show a1) ++ " = " ++ (show a2)
+  show (g ~> xs) = expand xs where
+    expand: Vect n Term -> String
+    expand Nil = ""
+    expand (a::Nil) = (getName g) ++ "_" ++ (show a)
+    expand (a::b::Nil) = (show a) ++ "_" ++ (getName g) ++ "_" ++ (show b)
+    expand (a::b::c::ys) = (getName g) ++ "_" ++ (show (a::b::c::ys))
+  show (f1 \/ f2) = show(f1) ++ "_or_" ++ show(f2)
+  show (f1 /\ f2) = show(f1) ++ "_&_" ++ show(f2)
+  show (f1 .=> f2) = show(f1) ++ " => " ++ show(f2)
+  show (f1 .~ f2) = show(f1) ++ " <=> " ++ show(f2)
+  show (Not f) = "not_" ++ show(f)
+  show (ForAll v f) = "forall_" ++ show(toTerm v) ++ ";_" ++ show(f)
+  show (Exists v f) = "exists_" ++ show(toTerm v) ++ ";_" ++ show(f)
 
 ----------------------------------------------------------------------
 ---->   Language of Sets
@@ -59,7 +78,7 @@ phi: Term
 phi = Cons "emptySet"
 
 belongs: Relation
-belongs = R "belongs" 2
+belongs = R "belongsTo" 2
 
 terms: (numVar:Nat) -> Vect (S numVar) Term
 terms Z = phi :: Nil
